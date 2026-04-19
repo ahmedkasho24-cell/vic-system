@@ -260,7 +260,7 @@ function populateDOB() {
 async function loadData() {
   showLoader();
   try {
-    const { data, error } = await db.from("players").select("*").order("id", {ascending:true});
+    const { data, error } = await db.from("players").select("*");
     if (error) throw error;
     allPlayers = data || [];
     filteredPlayers = [...allPlayers];
