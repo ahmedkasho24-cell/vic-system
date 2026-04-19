@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Victoria College Academy System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --red:#C8102E; --red-dark:#8B0000; --yellow:#FFD700; --yellow-soft:#FFF0A0;
+      --white:#FFFFFF; --off-white:#F7F7F7; --black:#0A0A0A;
+      --blue:#1A2A4A; --blue-soft:#3A5080; --gray:#EEEEEE; --gray-mid:#BBBBBB;
+      --shadow:0 4px 24px rgba(0,0,0,0.13);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Cairo',sans-serif;background:var(--off-white);color:var(--black);min-height:100vh}
+    header{background:linear-gradient(135deg,var(--red-dark) 0%,var(--red) 50%,var(--red-dark) 100%);color:var(--white);box-shadow:0 4px 20px rgba(0,0,0,0.35);position:sticky;top:0;z-index:100}
+    .header-inner{display:flex;align-items:center;justify-content:space-between;padding:14px 32px;border-bottom:3px solid var(--yellow)}
+    .logo-area{display:flex;align-items:center;gap:16px}
+    .logo-icon{width:58px;height:58px;background:var(--yellow);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 0 0 4px rgba(255,215,0,0.3);flex-shrink:0}
+    .logo-text h1{font-family:'Oswald',sans-serif;font-size:1.5rem;font-weight:700;letter-spacing:1px;line-height:1.1;color:var(--white)}
+    .logo-text span{font-size:0.78rem;color:var(--yellow);font-weight:600;letter-spacing:2px;text-transform:uppercase}
+    .header-stats{display:flex;gap:24px}
+    .stat-box{text-align:center;background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.25);border-radius:10px;padding:8px 18px}
+    .stat-box .num{font-family:'Oswald',sans-serif;font-size:1.6rem;font-weight:700;color:var(--yellow);display:block}
+    .stat-box .lbl{font-size:0.72rem;color:rgba(255,255,255,0.75);font-weight:600}
+    .toolbar{background:var(--blue);padding:10px 32px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 20px;border-radius:8px;border:none;font-family:'Cairo',sans-serif;font-size:0.88rem;font-weight:700;cursor:pointer;transition:all .2s}
+    .btn-primary{background:var(--yellow);color:var(--blue)}
+    .btn-primary:hover{background:#e6c000;transform:translateY(-1px);box-shadow:0 4px 12px rgba(255,215,0,0.4)}
+    .btn-danger{background:var(--red);color:var(--white)}
+    .btn-danger:hover{background:var(--red-dark);transform:translateY(-1px)}
+    .btn-outline{background:transparent;border:1.5px solid var(--yellow);color:var(--yellow)}
+    .btn-outline:hover{background:rgba(255,215,0,0.1)}
+    .search-box{margin-right:auto;position:relative}
+    .search-box input{background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,215,0,0.3);border-radius:8px;color:var(--white);padding:9px 14px 9px 36px;font-family:'Cairo',sans-serif;font-size:0.88rem;width:240px;transition:border .2s}
+    .search-box input::placeholder{color:rgba(255,255,255,0.45)}
+    .search-box input:focus{outline:none;border-color:var(--yellow)}
+    .search-box .si{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:rgba(255,215,0,0.6);font-size:16px}
+    .filters{background:var(--white);padding:10px 32px;display:flex;gap:10px;flex-wrap:wrap;border-bottom:2px solid var(--gray);align-items:center}
+    .filter-label{font-size:0.8rem;font-weight:700;color:var(--blue);margin-left:6px}
+    .filter-select{font-family:'Cairo',sans-serif;font-size:0.82rem;border:1.5px solid var(--gray-mid);border-radius:7px;padding:7px 12px;color:var(--blue);background:var(--white);cursor:pointer;transition:border .2s}
+    .filter-select:focus{outline:none;border-color:var(--red)}
+    .table-wrap{padding:24px 32px;overflow-x:auto}
+    table{width:100%;border-collapse:separate;border-spacing:0;background:var(--white);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);font-size:0.875rem}
+    thead tr{background:linear-gradient(90deg,var(--blue) 0%,var(--blue-soft) 100%);color:var(--white)}
+    thead th{padding:14px 12px;text-align:center;font-weight:700;font-size:0.82rem;letter-spacing:.5px;white-space:nowrap;border-bottom:3px solid var(--yellow)}
+    thead th:first-child{border-radius:14px 0 0 0}
+    thead th:last-child{border-radius:0 14px 0 0}
+    tbody tr{transition:background .15s;border-bottom:1px solid var(--gray)}
+    tbody tr:hover{background:#fff8e1}
+    tbody tr:last-child{border-bottom:none}
+    tbody td{padding:11px 12px;text-align:center;vertical-align:middle;color:var(--blue);font-size:0.85rem}
+    .row-num{background:var(--blue);color:var(--yellow);font-family:'Oswald',sans-serif;font-weight:700;border-radius:6px;padding:2px 8px;font-size:0.85rem;display:inline-block}
+    .name-cell{font-weight:700;color:var(--black)}
+    .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:700;white-space:nowrap}
+    .badge-green{background:#d4edda;color:#155724}
+    .badge-red{background:#f8d7da;color:#721c24}
+    .badge-yellow{background:var(--yellow-soft);color:#7a5c00}
+    .badge-blue{background:#d0e8ff;color:#0c3060}
+    .badge-purple{background:#e8d5f5;color:#4b0082}
+    .belt{display:inline-flex;align-items:center;gap:6px;font-weight:700}
+    .belt-dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+    .action-btns{display:flex;gap:6px;justify-content:center}
+    .icon-btn{width:32px;height:32px;border-radius:7px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .18s}
+    .icon-btn.edit{background:#d0e8ff;color:#0c3060}
+    .icon-btn.edit:hover{background:#0c3060;color:#fff}
+    .icon-btn.delete{background:#f8d7da;color:var(--red-dark)}
+    .icon-btn.delete:hover{background:var(--red-dark);color:#fff}
+    .no-data{text-align:center;padding:60px 0;color:var(--gray-mid)}
+    .no-data .icon{font-size:48px;margin-bottom:12px}
+    .modal-overlay{position:fixed;inset:0;background:rgba(10,10,10,0.55);backdrop-filter:blur(3px);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+    .modal-overlay.open{opacity:1;pointer-events:all}
+    .modal{background:var(--white);border-radius:18px;width:700px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);transform:translateY(30px) scale(.97);transition:transform .25s}
+    .modal-overlay.open .modal{transform:translateY(0) scale(1)}
+    .modal-header{background:linear-gradient(135deg,var(--red-dark),var(--red));color:var(--white);padding:20px 28px;border-radius:18px 18px 0 0;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--yellow)}
+    .modal-header h2{font-family:'Oswald',sans-serif;font-size:1.3rem}
+    .close-btn{background:rgba(255,255,255,0.15);border:none;color:var(--white);width:34px;height:34px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
+    .close-btn:hover{background:rgba(255,255,255,0.3)}
+    .modal-body{padding:28px}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    .form-group{display:flex;flex-direction:column;gap:6px}
+    .form-group label{font-size:0.82rem;font-weight:700;color:var(--blue)}
+    .form-group label span{color:var(--red)}
+    .form-group input,.form-group select{font-family:'Cairo',sans-serif;font-size:0.9rem;border:1.5px solid var(--gray-mid);border-radius:9px;padding:10px 13px;color:var(--blue);background:var(--white);transition:border .2s,box-shadow .2s}
+    .form-group input:focus,.form-group select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3px rgba(200,16,46,0.1)}
+    .modal-footer{padding:18px 28px;border-top:1.5px solid var(--gray);display:flex;gap:12px;justify-content:flex-end}
+    .confirm-modal{background:var(--white);border-radius:14px;width:380px;padding:32px 28px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);transform:scale(.95);transition:transform .22s}
+    .modal-overlay.open .confirm-modal{transform:scale(1)}
+    .confirm-icon{font-size:48px;margin-bottom:14px}
+    .confirm-modal h3{font-size:1.15rem;font-weight:700;color:var(--blue);margin-bottom:8px}
+    .confirm-modal p{font-size:0.88rem;color:#666;margin-bottom:24px}
+    .confirm-btns{display:flex;gap:12px;justify-content:center}
+    footer{text-align:center;padding:18px;font-size:0.78rem;color:var(--gray-mid);border-top:1px solid var(--gray);background:var(--white)}
+    footer span{color:var(--red);font-weight:700}
+    .loader-overlay{position:fixed;inset:0;background:var(--white);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .4s}
+    .loader-overlay.hide{opacity:0;pointer-events:none}
+    .spinner{width:50px;height:50px;border:5px solid var(--gray);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .loader-text{font-size:1rem;font-weight:700;color:var(--blue)}
+    .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--blue);color:var(--white);padding:12px 28px;border-radius:30px;font-size:0.9rem;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.2);z-index:500;transition:transform .3s;white-space:nowrap}
+    .toast.show{transform:translateX(-50%) translateY(0)}
+    .toast.success{background:#155724}
+    .toast.error{background:var(--red-dark)}
+    @media(max-width:768px){.header-inner{flex-direction:column;gap:12px;padding:14px 16px}.header-stats{gap:12px}.toolbar{padding:10px 16px}.filters{padding:10px 16px}.table-wrap{padding:16px}.form-grid{grid-template-columns:1fr}.search-box input{width:180px}}
+  </style>
+</head>
+<body>
+
+<div class="loader-overlay" id="loader">
+  <div class="logo-icon" style="width:70px;height:70px;font-size:36px;background:var(--red);">🥋</div>
+  <div class="spinner"></div>
+  <div class="loader-text">جارٍ تحميل بيانات الأكاديمية...</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<header>
+  <div class="header-inner">
+    <div class="logo-area">
+      <div class="logo-icon">🥋</div>
+      <div class="logo-text">
+        <h1>VICTORIA COLLEGE ACADEMY</h1>
+        <span>⚡ Taekwondo Management System</span>
+      </div>
+    </div>
+    <div class="header-stats">
+      <div class="stat-box"><span class="num" id="stat-total">0</span><span class="lbl">إجمالي اللاعبين</span></div>
+      <div class="stat-box"><span class="num" id="stat-paid">0</span><span class="lbl">دفعوا الشهر</span></div>
+      <div class="stat-box"><span class="num" id="stat-medical">0</span><span class="lbl">كشف سليم</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <button class="btn btn-primary" onclick="openAddModal()">➕ إضافة لاعب جديد</button>
+  <button class="btn btn-outline" onclick="exportCSV()">📥 تصدير CSV</button>
+  <button class="btn btn-outline" onclick="loadData()">🔄 تحديث البيانات</button>
+  <div class="search-box">
+    <span class="si">🔍</span>
+    <input type="text" id="searchInput" placeholder="ابحث باسم اللاعب أو ID..." oninput="applyFilters()"/>
+  </div>
+</div>
+
+<div class="filters">
+  <span class="filter-label">🔽 تصفية:</span>
+  <select class="filter-select" id="filterCategory" onchange="applyFilters()">
+    <option value="">كل الفئات</option>
+    <option>جونيور</option><option>مدارس</option><option>سينيور</option><option>ناشئين</option><option>كادت</option>
+  </select>
+  <select class="filter-select" id="filterPayment" onchange="applyFilters()">
+    <option value="">حالة الدفع</option><option>دفع</option><option>لم يدفع</option>
+  </select>
+  <select class="filter-select" id="filterMedical" onchange="applyFilters()">
+    <option value="">الكشف الطبي</option><option>سليم</option><option>منتهي</option>
+  </select>
+  <select class="filter-select" id="filterBelt" onchange="applyFilters()">
+    <option value="">درجة الحزام</option>
+    <option>أبيض</option><option>أصفر</option><option>أخضر</option><option>أزرق</option><option>أحمر</option><option>أسود</option>
+  </select>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th><th>الاسم</th><th>ID</th><th>تاريخ الميلاد</th><th>الحزام</th>
+        <th>الكشف الطبي</th><th>التجديد السنوي</th><th>دفع الشهر</th>
+        <th>البطولات</th><th>الفئة</th><th>الرقم القومي</th><th>إجراءات</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<footer>Victoria College Academy &copy; 2025 — <span>Taekwondo Management System</span> — Powered by Supabase</footer>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="formModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle">➕ إضافة لاعب جديد</h2>
+      <button class="close-btn" onclick="closeModal('formModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>الاسم <span>*</span></label><input type="text" id="f-name" placeholder="الاسم الكامل للاعب"/></div>
+        <div class="form-group"><label>ID اللاعب <span>*</span></label><input type="text" id="f-id" placeholder="مثال: TKD-001"/></div>
+        <div class="form-group"><label>تاريخ الميلاد <span>*</span></label><select id="f-dob"><option value="">-- اختر السنة --</option></select></div>
+        <div class="form-group"><label>درجة الحزام <span>*</span></label>
+          <select id="f-belt"><option value="">-- اختر الحزام --</option><option>أبيض</option><option>أصفر</option><option>أخضر</option><option>أزرق</option><option>أحمر</option><option>أسود</option></select>
+        </div>
+        <div class="form-group"><label>الكشف الطبي</label>
+          <select id="f-medical"><option value="">-- اختر --</option><option>سليم</option><option>منتهي</option></select>
+        </div>
+        <div class="form-group"><label>التجديد السنوي</label><input type="text" id="f-renewal" placeholder="مثال: 2025-06"/></div>
+        <div class="form-group"><label>دفع الشهر</label>
+          <select id="f-payment"><option value="">-- اختر --</option><option>دفع</option><option>لم يدفع</option></select>
+        </div>
+        <div class="form-group"><label>البطولات</label>
+          <select id="f-tournament"><option value="">-- اختر --</option><option>كأس</option><option>قطاعات</option><option>جمهورية</option></select>
+        </div>
+        <div class="form-group"><label>الفئة <span>*</span></label>
+          <select id="f-category"><option value="">-- اختر الفئة --</option><option>جونيور</option><option>مدارس</option><option>سينيور</option><option>ناشئين</option><option>كادت</option></select>
+        </div>
+        <div class="form-group"><label>الرقم القومي</label><input type="text" id="f-national" placeholder="14 رقم" maxlength="14"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" style="color:#666;border-color:#ccc;" onclick="closeModal('formModal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="savePlayer()">💾 حفظ اللاعب</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="confirm-modal">
+    <div class="confirm-icon">⚠️</div>
+    <h3>تأكيد الحذف</h3>
+    <p>هل أنت متأكد من حذف هذا اللاعب؟<br/>لا يمكن التراجع عن هذا الإجراء.</p>
+    <div class="confirm-btns">
+      <button class="btn btn-outline" style="color:#555;border-color:#ccc;" onclick="closeModal('confirmModal')">إلغاء</button>
+      <button class="btn btn-danger" id="confirmDeleteBtn">🗑️ حذف</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://cqkdfvskappjjzmodxoq.supabase.co";
+const SUPABASE_KEY = "sb_publishable_SRgG_VgjVhvBzKKJOh80vA_tRBY0Xut";
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let allPlayers = [];
+let filteredPlayers = [];
+let editingId = null;
+
+const beltStyle = {
+  "أبيض":{color:"#555",bg:"#f5f5f5",border:"1px solid #ccc"},
+  "أصفر":{color:"#7a5c00",bg:"#FFF9C4",border:"none"},
+  "أخضر":{color:"#155724",bg:"#d4edda",border:"none"},
+  "أزرق":{color:"#0c3060",bg:"#d0e8ff",border:"none"},
+  "أحمر":{color:"#721c24",bg:"#f8d7da",border:"none"},
+  "أسود":{color:"#fff",bg:"#222",border:"none"},
+};
+const beltDot = {"أبيض":"#ccc","أصفر":"#FFD700","أخضر":"#28a745","أزرق":"#007bff","أحمر":"#dc3545","أسود":"#111"};
+
+function populateDOB() {
+  const sel = document.getElementById("f-dob");
+  const cur = new Date().getFullYear();
+  for (let y = cur-4; y >= cur-30; y--) {
+    const o = document.createElement("option");
+    o.value = o.textContent = y;
+    sel.appendChild(o);
+  }
+}
+
+async function loadData() {
+  showLoader();
+  try {
+    const { data, error } = await db.from("players").select("*").order("id", {ascending:true});
+    if (error) throw error;
+    allPlayers = data || [];
+    filteredPlayers = [...allPlayers];
+    renderTable();
+    updateStats();
+    showToast("✅ تم تحميل البيانات بنجاح", "success");
+  } catch(e) {
+    showToast("❌ خطأ في الاتصال بقاعدة البيانات", "error");
+  } finally {
+    hideLoader();
+  }
+}
+
+function renderTable() {
+  const tbody = document.getElementById("tableBody");
+  if (!filteredPlayers.length) {
+    tbody.innerHTML = `<tr><td colspan="12"><div class="no-data"><div class="icon">🥋</div><p>لا توجد بيانات لاعبين — أضف لاعب جديد!</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filteredPlayers.map((p,i) => {
+    const bs = beltStyle[p.belt] || {color:"#333",bg:"#eee",border:"none"};
+    const bd = beltDot[p.belt] || "#999";
+    return `<tr>
+      <td><span class="row-num">${i+1}</span></td>
+      <td class="name-cell">👤 ${p.name||""}</td>
+      <td><code style="background:#f0f0f0;padding:2px 7px;border-radius:5px;font-size:0.8rem;">${p.player_id||""}</code></td>
+      <td>${p.dob||""}</td>
+      <td><span class="belt badge" style="background:${bs.bg};color:${bs.color};border:${bs.border};"><span class="belt-dot" style="background:${bd};"></span>${p.belt||""}</span></td>
+      <td><span class="badge ${p.medical==="سليم"?"badge-green":"badge-red"}">${p.medical==="سليم"?"✅":"❌"} ${p.medical||"—"}</span></td>
+      <td><span class="badge badge-blue">📅 ${p.renewal||"—"}</span></td>
+      <td><span class="badge ${p.payment==="دفع"?"badge-green":"badge-red"}">${p.payment==="دفع"?"💰":"⏳"} ${p.payment||"—"}</span></td>
+      <td><span class="badge badge-purple">🏆 ${p.tournament||"—"}</span></td>
+      <td><span class="badge badge-yellow">🎽 ${p.category||"—"}</span></td>
+      <td style="font-size:0.78rem;letter-spacing:1px;">${p.national||"—"}</td>
+      <td><div class="action-btns">
+        <button class="icon-btn edit" onclick="editPlayer('${p.id}')" title="تعديل">✏️</button>
+        <button class="icon-btn delete" onclick="confirmDelete('${p.id}')" title="حذف">🗑️</button>
+      </div></td>
+    </tr>`;
+  }).join("");
+}
+
+function updateStats() {
+  document.getElementById("stat-total").textContent = allPlayers.length;
+  document.getElementById("stat-paid").textContent = allPlayers.filter(p=>p.payment==="دفع").length;
+  document.getElementById("stat-medical").textContent = allPlayers.filter(p=>p.medical==="سليم").length;
+}
+
+function applyFilters() {
+  const search = document.getElementById("searchInput").value.trim().toLowerCase();
+  const cat = document.getElementById("filterCategory").value;
+  const pay = document.getElementById("filterPayment").value;
+  const med = document.getElementById("filterMedical").value;
+  const belt = document.getElementById("filterBelt").value;
+  filteredPlayers = allPlayers.filter(p => {
+    if (search && !( (p.name||"").toLowerCase().includes(search) || (p.player_id||"").toLowerCase().includes(search) )) return false;
+    if (cat && p.category !== cat) return false;
+    if (pay && p.payment !== pay) return false;
+    if (med && p.medical !== med) return false;
+    if (belt && p.belt !== belt) return false;
+    return true;
+  });
+  renderTable();
+}
+
+function openModal(id) { document.getElementById(id).classList.add("open"); }
+function closeModal(id) { document.getElementById(id).classList.remove("open"); }
+
+function openAddModal() {
+  editingId = null;
+  document.getElementById("modalTitle").textContent = "➕ إضافة لاعب جديد";
+  ["f-name","f-id","f-dob","f-belt","f-medical","f-renewal","f-payment","f-tournament","f-category","f-national"]
+    .forEach(id => { document.getElementById(id).value = ""; });
+  openModal("formModal");
+}
+
+function editPlayer(id) {
+  editingId = id;
+  const p = allPlayers.find(x => x.id == id);
+  if (!p) return;
+  document.getElementById("modalTitle").textContent = "✏️ تعديل بيانات اللاعب";
+  document.getElementById("f-name").value = p.name||"";
+  document.getElementById("f-id").value = p.player_id||"";
+  document.getElementById("f-dob").value = p.dob||"";
+  document.getElementById("f-belt").value = p.belt||"";
+  document.getElementById("f-medical").value = p.medical||"";
+  document.getElementById("f-renewal").value = p.renewal||"";
+  document.getElementById("f-payment").value = p.payment||"";
+  document.getElementById("f-tournament").value = p.tournament||"";
+  document.getElementById("f-category").value = p.category||"";
+  document.getElementById("f-national").value = p.national||"";
+  openModal("formModal");
+}
+
+async function savePlayer() {
+  const player = {
+    name: document.getElementById("f-name").value.trim(),
+    player_id: document.getElementById("f-id").value.trim(),
+    dob: document.getElementById("f-dob").value,
+    belt: document.getElementById("f-belt").value,
+    medical: document.getElementById("f-medical").value,
+    renewal: document.getElementById("f-renewal").value.trim(),
+    payment: document.getElementById("f-payment").value,
+    tournament: document.getElementById("f-tournament").value,
+    category: document.getElementById("f-category").value,
+    national: document.getElementById("f-national").value.trim(),
+  };
+  if (!player.name || !player.player_id || !player.dob || !player.belt || !player.category) {
+    showToast("⚠️ يرجى ملء الحقول الإلزامية", "error");
+    return;
+  }
+  try {
+    if (editingId) {
+      const { error } = await db.from("players").update(player).eq("id", editingId);
+      if (error) throw error;
+      showToast("✅ تم تعديل اللاعب بنجاح", "success");
+    } else {
+      const { error } = await db.from("players").insert([player]);
+      if (error) throw error;
+      showToast("✅ تمت إضافة اللاعب بنجاح", "success");
+    }
+    closeModal("formModal");
+    await loadData();
+  } catch(e) {
+    showToast("❌ خطأ في الحفظ: " + e.message, "error");
+  }
+}
+
+function confirmDelete(id) {
+  openModal("confirmModal");
+  document.getElementById("confirmDeleteBtn").onclick = async () => {
+    try {
+      const { error } = await db.from("players").delete().eq("id", id);
+      if (error) throw error;
+      closeModal("confirmModal");
+      showToast("🗑️ تم حذف اللاعب بنجاح", "success");
+      await loadData();
+    } catch(e) {
+      showToast("❌ خطأ في الحذف", "error");
+    }
+  };
+}
+
+function exportCSV() {
+  const headers = ["الاسم","ID","الميلاد","الحزام","الكشف الطبي","التجديد","دفع الشهر","البطولات","الفئة","الرقم القومي"];
+  const rows = filteredPlayers.map(p =>
+    [p.name,p.player_id,p.dob,p.belt,p.medical,p.renewal,p.payment,p.tournament,p.category,p.national]
+    .map(v => `"${(v||"").replace(/"/g,'""')}"`)
+    .join(",")
+  );
+  const csv = "\uFEFF" + [headers.join(","), ...rows].join("\n");
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `VCA_Players_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  showToast("📥 تم تصدير البيانات", "success");
+}
+
+let toastTimer;
+function showToast(msg, type="") {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = "toast"; }, 3000);
+}
+
+function showLoader() { document.getElementById("loader").classList.remove("hide"); }
+function hideLoader() { document.getElementById("loader").classList.add("hide"); }
+
+document.querySelectorAll(".modal-overlay").forEach(o => {
+  o.addEventListener("click", e => { if(e.target===o) o.classList.remove("open"); });
+});
+
+populateDOB();
+loadData();
+</script>
+</body>
+</html>
